@@ -1,0 +1,80 @@
+<div class="container" style="padding: 5px 0;">
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<button class="btn btn-default" data-toggle="modal" data-target="#create-park" ng-click="newPark = {}">Добавить парк</button>
+	</div>
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<span>Фильтр: </span>
+		<input type="text" class="form-control" ng-model="search.$" style="display: inline-block; width: 40%;">
+	</div>
+</div>
+<div class="list-container">
+	<table ng-if="parks.length > 0">
+		<thead>
+			<tr>
+				<th>Название парка</th>
+				<th></th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="park in parks | filter:search:strict | orderBy:park.park_name:reverse">
+				<td class="col-lg-10 col-md-10 col-sm-10 col-xs-10">
+					<a href="/#/admin/park/view/{{park.id}}">{{park.name}}</a>
+				</td>
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<span class="btn btn-link" ng-click="setCurrentPark(park);" data-toggle="modal" data-target="#update-park">Редактировать</span>
+				</td>
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<span class="btn btn-link" ng-click="removePark(park.id);">Удалить</span>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<div ng-if="parks.length == 0" class="alert alert-warning" role="alert">
+		На данный момент нет ни одного парка.
+	</div>
+</div>
+
+<div class="modal fade" id="create-park">
+	<div class="modal-dialog">
+		<form ng-submit="createPark();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Новый парк</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" name="parkname" placeholder="Название парка" class="form-control" ng-model="newPark.name">
+						<i class="glyphicon glyphicon-wrench"></i>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div class="modal fade" id="update-park">
+	<div class="modal-dialog">
+		<form ng-submit="updatePark();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Редактирование парка</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" name="parkname" placeholder="Название парка" class="form-control" ng-model="currentPark.name">
+						<i class="glyphicon glyphicon-wrench"></i>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-model-edit">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>

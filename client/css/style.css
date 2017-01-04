@@ -1,0 +1,222 @@
+html {
+	height: 100%;
+	overflow: auto;
+}
+
+* {
+	transition: all .5s;
+	font-family: Monaco;
+}
+
+body {
+	min-height: 100% !important;
+	height: auto;
+}
+
+.navbar {
+	margin-bottom: 0 !important;
+}
+
+.window-container, .login-page {
+	width: 100%;
+	height: 100%;
+}
+
+.login-page {
+	/*display: table-cell;*/
+}
+
+.login-form {
+	width: 300px;
+	margin: 0 auto;
+}
+
+.form-element {
+	padding: 5px 0;
+	position: relative;
+}
+
+.form-element input {
+	padding-left: 35px;
+}
+
+.form-element i {
+	position: absolute;
+	color: #3384CA;
+	top: 9px;
+	left: 3px;
+	font-size: 20px;
+	padding: 2px;
+}
+
+.custom-nav {
+	width: 100% !important;
+}
+
+.custom-nav li {
+	width: 25%;
+	text-align: center;
+}
+
+.custom-nav li:hover {
+	background-color: rgba(0, 0 , 0, 0.5);
+}
+
+.custom-nav li:hover a {
+	color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.error-message {
+	background-color: rgba(214,40,34,0.07);
+	border: 1px solid rgba(214,40,34,0.36);
+	color: #d62822;
+	font-size: 14px;
+	text-align: left;
+	padding: 10px;
+	margin-bottom: 20px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+}
+
+.list-container table {
+	width: 100%;
+}
+
+th, td {
+	text-align: center !important;
+}
+
+.list-container thead tr {
+	background-color: #aaa;
+	color: white;
+}
+
+.list-container tr td, .list-container th {
+	padding: 3px 10px;
+}
+
+.list-container tr td:nth-last-child(1), .list-container tr td:nth-last-child(2),
+.list-container tr th:nth-last-child(1), .list-container tr th:nth-last-child(1) {
+	padding: 3px 0px;
+}
+
+.list-container tbody tr:nth-child(odd) {
+	background-color: #eee;
+}
+
+.list-container tbody tr:nth-child(even) {
+	background-color: #ddd;
+}
+
+.list-container tbody tr:hover {
+	background-color: #BED9E1;
+}
+
+.list-container tr:last-child td:first-child {
+	border-bottom-left-radius: 5px;
+}
+
+.list-container tr:last-child td:last-child {
+	border-bottom-right-radius: 5px;
+}
+
+.list-container tr:first-child th:first-child {
+	border-top-left-radius: 5px;
+}
+
+.list-container tr:first-child th:last-child {
+	border-top-right-radius: 5px;
+}
+
+.station-list {
+	list-style: none;
+	width: 70%;
+	margin: 25px auto;
+	text-align: center;
+	background-color: #ddd;
+	padding: 10px;
+	box-sizing: border-box;
+	border-radius: 10px;
+	position: relative;
+}
+
+.next-station {
+	position: absolute !important;
+	bottom: -22px !important;
+	top: inherit !important;
+	left: 50% !important;
+	font-size: 20px;
+	margin-left: -10px;
+}
+
+.way-info-container h3 {
+	text-align: center;
+}
+
+.edit-way-list td {
+	padding: 5px 0 20px 0;
+}
+
+.station-edit-list {
+	width: 100%;
+	text-align: center;
+	background-color: #ddd;
+	padding: 10px;
+	box-sizing: border-box;
+	border-radius: 10px;
+	position: relative;
+}
+
+.info div:nth-child(odd) {
+	font-weight: bold; 
+	font-size: 16px; 
+	text-align: right;
+}
+
+.info div:nth-child(even) {
+	padding: 2px 0;
+}
+
+.preview {
+	background-color: rgba(0,0,0,.5);
+	position: fixed;
+	overflow: auto;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	z-index: 1040;
+}
+
+.preview form {
+	padding: 15px 0;
+	border-radius: 10px;
+
+}
+
+.info-wrapper {
+	padding: 5px; 
+	border: 1px solid rgba(0, 0, 0, .1); 
+	border-radius: 15px;
+}
+
+.info-wrapper .table {
+	margin-bottom: 0;
+}
+
+.schedule-station-wrapper:not(:last-child) {
+	margin-bottom: 3px;
+}
+
+.close-element {
+	padding: 0 !important;
+	max-height: 0 !important;
+	margin: 0 !important;
+}
+
+.element {
+	max-height: 1000px;
+	overflow-y: auto;
+	transition: max-height .3s ease-out;
+}
+

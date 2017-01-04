@@ -1,0 +1,87 @@
+<h1>Расписание транспорта</h1>
+
+<div ng-repeat="element in home" class="info-wrapper" style="margin-bottom: 3px;">
+	
+	<h3 style="cursor: pointer;" onclick="$(this).next('div').each(function() { this.classList.toggle('close-element'); })">{{element.transport.type}} №{{element.transport.number}}</h3>
+
+	<div class="list-group element close-element" style="margin-bottom: 0;">
+
+		<div onclick="$(this).next('div').each(function() { this.classList.toggle('close-element'); })" class="list-group-item active" style="cursor: pointer;">
+			{{element.way_1.name}}
+		</div>
+		<div class="list-group-item element close-element">
+			<div ng-repeat="station in element.way_1.stations" class="info-wrapper schedule-station-wrapper">
+				<h4 style="cursor: pointer;" onclick="$(this).next('div').each(function() { this.classList.toggle('close-element'); })">{{station.station_name}}</h4>
+				<div class="list-group element close-element">
+					
+					<div class="list-group-item list-group-item-info">
+						Будние дни
+					</div>
+					<div ng-if="station.weekday.length > 0" ng-repeat="weekday in station.weekday" style="margin-bottom: 0;" class="list-group-item">
+						{{weekday}}
+					</div>
+					<div style="height: 2px;"></div>
+					<div ng-if="station.weekday.length == 0" class="list-group-item">
+						<div class="alert alert-warning">
+							 Отсутствет расписание.
+						</div>
+					</div>
+
+					<div class="list-group-item list-group-item-info">
+						Выходные дни
+					</div>
+					<div ng-if="station.weekend.length > 0" ng-repeat="weekend in station.weekend" style="margin-bottom: 0;" class="list-group-item">
+						{{weekend}}
+					</div>
+					<div ng-if="station.weekend.length == 0" class="list-group-item">
+						<div class="alert alert-warning">
+							 Отсутствет расписание.
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+		<div style="height: 5px;"></div>
+
+		<div onclick="$(this).next('div').each(function() { this.classList.toggle('close-element'); })" class="list-group-item active" style="cursor: pointer;">
+			{{element.way_2.name}}
+		</div>
+		<div class="list-group-item element close-element">
+			<div ng-repeat="station in element.way_2.stations" class="info-wrapper schedule-station-wrapper">
+				<h4 style="cursor: pointer;" onclick="$(this).next('div').each(function() { this.classList.toggle('close-element'); })">{{station.station_name}}</h4>
+				<div class="list-group element close-element">
+					
+					<div class="list-group-item list-group-item-info">
+						Будние дни
+					</div>
+					<div ng-if="station.weekday.length > 0" ng-repeat="weekday in station.weekday" style="margin-bottom: 0;" class="list-group-item">
+						{{weekday}}
+					</div>
+					<div ng-if="station.weekday.length == 0" class="list-group-item">
+						<div class="alert alert-warning">
+							 Отсутствет расписание.
+						</div>
+					</div>
+
+					<div style="height: 2px;"></div>
+	
+					<div class="list-group-item list-group-item-info">
+						Выходные дни
+					</div>
+					<div ng-if="station.weekend.length > 0" ng-repeat="weekend in station.weekend" style="margin-bottom: 0;" class="list-group-item">
+						{{weekend}}
+					</div>
+					<div ng-if="station.weekend.length == 0" class="list-group-item">
+						<div class="alert alert-warning">
+							 Отсутствет расписание.
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+	</div>
+</div>

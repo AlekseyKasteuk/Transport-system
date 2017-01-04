@@ -1,0 +1,29 @@
+<div class="container-fluid">
+	<h1>{{parkInfo.park.name}}</h1>
+</div>
+<div class="container-fluid">
+	<h3>Транспорт в парке</h3>
+	<div class="list-container">
+		<table ng-if="parkInfo.transports.length > 0">
+			<thead>
+				<tr>
+					<th>Номер</th>
+					<th>Тип</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="transport in parkInfo.transports">
+					<td class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
+						<a href="#/admin/transport/view/{{transport.id}}">{{transport.number}}</a>
+					</td>
+					<td class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
+						{{transport.type}}
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div ng-if="parkInfo.transports.length == 0" class="alert alert-warning" role="alert">
+			 К выбранному парку не принадлежит ни один транспорт.
+		</div>
+	</div>
+</div>

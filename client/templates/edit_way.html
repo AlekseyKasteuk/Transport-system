@@ -1,0 +1,114 @@
+<div class="container" style="padding: 5px 0;">
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<a href="#/admin/way/edit/{{wayInfo.way.id}}" class="btn btn-default" ng-click="getFields();" data-toggle="modal" data-target="#change-way">Изменить основные значения пути</a>
+	</div>
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<a href="#/admin/schedule/edit/{{wayInfo.way.id}}" class="btn btn-default">Редактировать расписание</a>
+	</div>
+</div>
+
+<div class="container">
+
+	<div class="container-fluid way-info-container">
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">Маршрут транспорта: <br />
+			<a href="#/admin/transport/view/{{wayInfo.way.transport_id}}">{{wayInfo.way.transport_type}} №{{wayInfo.way.transport_number}}</a>
+		</h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">От станции:<br /><a href="#/admin/station/view/{{wayInfo.way.station_from_id}}">{{wayInfo.way.station_from_name}}</a></h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">До станции:<br />
+			<a href="#/admin/station/view/{{wayInfo.way.station_to_id}}">{{wayInfo.way.station_to_name}}</a>
+		</h3>
+	</div>
+
+	<div class="container-fluid" style="text-align: center; padding: 10px 0;">
+		<button class="btn btn-success" ng-click="saveWay();">Сохранить</button>
+		<button class="btn btn-success" data-toggle="modal" data-target="#add-station" ng-click="getStations();">Добавить станцию</button>
+	</div>
+
+	<table width="100%">
+		<tr ng-repeat="station in wayInfo.stations" class="edit-way-list">
+
+			<td class="col-lg-9 col-md-9 col-sx-9 col-sm-9">
+				<div class="station-edit-list" value="{{station.station_id}}" >
+					{{station.station_name}}
+					<i class="next-station glyphicon glyphicon-arrow-down" ng-if="!$last"></i>
+				</div>
+			</td>
+			<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+				<button ng-if="!$first && $index != 1 && !$last" class="btn btn-link" ng-click="swapStations($index, $index - 1);">Вверх</button>
+			</td>
+			<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+				<button ng-if="!$first && !$last && $index != wayInfo.stations.length - 2" class="btn btn-link" ng-click="swapStations($index, $index + 1);">Вниз</button>
+			</td>
+			<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+				<button ng-if="!$first && !$last" class="btn btn-link" ng-click="removeStation($index);">Удалить</button>
+			</td>
+
+		</tr>
+	</table>
+
+	<div class="container-fluid" style="text-align: center; padding: 10px 0;">
+		<button class="btn btn-success" ng-click="saveWay();">Сохранить</button>
+		<button class="btn btn-success" data-toggle="modal" data-target="#add-station" ng-click="getStations();">Добавить станцию</button>
+	</div>
+	
+</div>
+
+<div class="modal fade" id="add-station">
+	<div class="modal-dialog">
+		<form class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Остановка</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<select ng-model="newStation" class="form-control">
+							<option selected disabled value="">Выберите станцию</option>
+							<option ng-repeat="station in availibleStations | orderBy:name:reverse" value="{{station}}">{{station.name}}</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button  class="btn btn-primary" ng-click="addStation();" data-dismiss="modal">Добавить</button>
+					<button data-dismiss="modal" class="btn btn-default" id="close-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div class="modal fade" id="change-way">
+	<div class="modal-dialog">
+		<form class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Редактирование пути</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<select ng-model="currentWay.transport" class="form-control">
+							<option selected disabled value="">Выберите транспорт</option>
+							<option ng-repeat="transport in fields.transports | orderBy: number" value="{{transport.id}}">{{transport.number}} {{transport.transport_type_name}}</option>
+						</select>
+					</div>
+					<div class="form-element">
+						<select ng-model="currentWay.station_from" class="form-control">
+							<option selected disabled value="">Выберите остановку отправления</option>
+							<option ng-repeat="station in fields.stations | orderBy: name" value="{{station.id}}">{{station.name}}</option>
+						</select>
+					</div>
+					<div class="form-element">
+						<select ng-model="currentWay.station_to" class="form-control">
+							<option selected disabled value="">Выберите остановку прибытия</option>
+							<option ng-repeat="station in fields.stations | orderBy: name" value="{{station.id}}">{{station.name}}</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button  class="btn btn-primary" ng-if="currentWay.transport != wayInfo.way.transport_id || currentWay.station_from != wayInfo.way.station_from_id || currentWay.station_to != wayInfo.way.station_to_id" ng-click="editWay();" data-dismiss="modal">Сохранить</button>
+					<button data-dismiss="modal" class="btn btn-default" id="close-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>

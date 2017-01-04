@@ -1,0 +1,180 @@
+
+<nav class="navbar navbar-default navbar-static-top">
+	<div class="container-fluid">
+		<div class="navbar-header">
+			<a href="/#/app/home" class="navbar-brand">Транспортная система г. {{user.city.name}}</a>
+		</div>
+		<div>
+			<div class="navbar-form navbar-right">
+				<span ng-if="user.role.name == 'admin'">
+					<span class="btn btn-primary" data-toggle="modal" data-target="#country-add" ng-click="resetCountry();">Добавить страну</span>
+					<span class="btn btn-primary" data-toggle="modal" data-target="#city-add" ng-click="resetCity();">Добавить город</span>
+					<span class="btn btn-primary" data-toggle="modal" data-target="#account-add" ng-click="getUserInfo();">Добавить пользователя</span>
+				</span>
+				<span class="btn btn-link" data-toggle="modal" data-target="#account-update" ng-click="getCurrentUserInfo();">{{user.username}}</span>
+				<a href="#/login" style="font-size: 20px;" class="glyphicon glyphicon-log-out" ng-click="logout();"></a>
+			</div>
+		</div>
+	</div>
+</nav>
+<div class="container-fluid">
+	<nav class="navbar navbar-default">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#dropped-menu">
+				<span class="sr-only">Открыть меню</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+		</div>
+		<div class="collapse navbar-collapse" id="dropped-menu">
+			<ul class="nav navbar-nav custom-nav">
+				<li><a href="/#/admin/parks">Парки</a></li>
+				<li><a href="/#/admin/transports">Транспорт</a></li>
+				<li><a href="/#/admin/stations">Остановки</a></li>
+				<li><a href="/#/admin/ways">Маршруты</a></li>
+			</ul>
+		</div>
+	</nav>
+	<div class="app-container" ui-view></div>
+</div>
+<div class="app-footer"></div>
+
+<div class="modal fade" id="account-add">
+	<div class="modal-dialog modal-lg">
+		<form ng-submit="addAccount();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Новый пользователь</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" name="username" placeholder="Логин" class="form-control" ng-model="newAccount.username" pattern="^(\w|[\.\-_@]){6,46}$" required>
+						<i class="glyphicon glyphicon-user"></i>
+					</div>
+					<div class="form-element">
+						<input type="password" name="password" placeholder="Пароль" class="form-control" ng-model="newAccount.password"pattern="^(\w|[\!\?\.\-_@]){6,46}$" required>
+						<i class="glyphicon glyphicon-lock"></i>
+					</div>
+					<div class="form-element">
+						<input type="password" name="password" placeholder="Повторите пароль" class="form-control" ng-model="newAccount.passwordRepeat" pattern="^(\w|[\!\?\.\-_@]){6,46}$" required>
+						<i class="glyphicon glyphicon-lock"></i>
+					</div>
+					<div class="form-element">
+						<select ng-model="newAccount.city" class="form-control" required>
+							<option value="" disabled selected>Выберите город</option>
+							<option ng-repeat="city in userInfo.cities" value="{{city.id}}">{{city.name}}</option>
+						</select>
+					</div>
+					<div class="form-element">
+						<select ng-model="newAccount.role" class="form-control" required>
+							<option value="" disabled selected>Выберите роль</option>
+							<option ng-repeat="role in userInfo.roles" value="{{role.id}}">{{role.name}}</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" ng-if="newAccount.password && newAccount.password == newAccount.passwordRepeat" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-add-account-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div class="modal fade" id="account-update">
+	<div class="modal-dialog modal-lg">
+		<form class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>{{user.username}}</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" name="username" placeholder="Логин" class="form-control" ng-model="curentUser.username" pattern="^(\w|[\.\-_@]){6,46}$" required>
+						<i class="glyphicon glyphicon-user"></i>
+					</div>
+					<div class="btn btn-primary" style="width: 100%;">Изменить логин</div>
+					<div class="form-element">
+						<input type="password" name="password" placeholder="Пароль" class="form-control" ng-model="curentUser.password"pattern="^(\w|[\!\?\.\-_@]){6,46}$" required>
+						<i class="glyphicon glyphicon-lock"></i>
+					</div>
+					<div class="form-element">
+						<input type="password" name="password" placeholder="Повторите пароль" class="form-control" ng-model="curentUser.passwordRepeat" pattern="^(\w|[\!\?\.\-_@]){6,46}$" required>
+						<i class="glyphicon glyphicon-lock"></i>
+					</div>
+					<div class="btn btn-primary" style="width: 100%;">Изменить пароль</div>
+					<div ng-if="user.role.name == 'admin'">
+						<div class="form-element">
+							<select ng-model="curentUser.city" class="form-control" required>
+								<option value="" disabled selected>Выберите город</option>
+								<option ng-repeat="city in userInfo.cities" value="{{city.id}}">{{city.name}}</option>
+							</select>
+						</div>
+						<div class="form-element">
+							<select ng-model="curentUser.role" class="form-control" required>
+								<option value="" disabled selected>Выберите роль</option>
+								<option ng-repeat="role in userInfo.roles" value="{{role.id}}">{{role.name}}</option>
+							</select>
+						</div>
+						<div class="btn btn-primary" style="width: 100%;">Изменить другую информацию</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button data-dismiss="modal" class="btn btn-default" id="close-update-account-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div class="modal fade" id="country-add">
+	<div class="modal-dialog modal-lg">
+		<form ng-submit="addCountry();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Новая страна</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" name="username" placeholder="Новая страна" class="form-control" ng-model="newCountry.name" pattern="^[А-ЯA-Z](\w|[\.\-_@а-яА-Я ]){5,44}$" required>
+						<i class="glyphicon glyphicon-user"></i>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-add-country-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div class="modal fade" id="city-add">
+	<div class="modal-dialog modal-lg">
+		<form ng-submit="addCity();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Новый город</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" name="username" placeholder="Новый город" class="form-control" ng-model="newCity.name" pattern="^[А-ЯA-Z](\w|[\.\-_@а-яА-Я ]){5,44}$" required>
+						<i class="glyphicon glyphicon-user"></i>
+					</div>
+					<div class="form-element">
+						<select ng-model="newCity.country" class="form-control" required>
+							<option value="" disabled selected>Выберите страну</option>
+							<option ng-repeat="country in countries" value="{{country.id}}">{{country.name}}</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-add-city-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+

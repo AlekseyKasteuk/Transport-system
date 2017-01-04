@@ -1,0 +1,61 @@
+<div class="container-fluid">
+	<h1>{{stationInfo.station.name}}</h1>
+</div>
+<div class="container-fluid">
+	<h3>Транспорт</h3>
+	<div class="list-container">
+		<table ng-if="stationInfo.transports.length > 0">
+			<thead>
+				<tr>
+					<th>Номер</th>
+					<th>Тип</th>
+					<th>Парк</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="transport in stationInfo.transports">
+					<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+						<a href="#/admin/transport/view/{{transport.id}}">{{transport.number}}</a>
+					</td>
+					<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+						{{transport.type}}
+					</td>
+					<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+						<a href="#/admin/park/view/{{transport.park_id}}">{{transport.park_name}}</a>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div ng-if="stationInfo.transports.length == 0" class="alert alert-warning" role="alert">
+			 На выбранной остановке не останавливается ни один транспорт.
+		</div>
+	</div>
+	<h3>Маршруты</h3>
+	<div class="list-container">
+		<table ng-if="stationInfo.transports.length > 0">
+			<thead>
+				<tr>
+					<th>Транспорт</th>
+					<th>Маршрут</th>
+					<th>Маршрут</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="way in stationInfo.ways">
+					<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+						<a href="#/admin/transport/view/{{way.transport_id}}">{{way.transport_type}} №{{way.transport_number}}</a>
+					</td>
+					<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+						<a href="#/admin/way/view/{{way.way_1_id}}">{{way.way_1_from_to}}</a>
+					</td>
+					<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+						<a href="#/admin/way/view/{{way.way_2_id}}">{{way.way_2_from_to}}</a>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div ng-if="stationInfo.transports.length == 0" class="alert alert-warning" role="alert">
+			 Выбранная остановка не включена ни в один маршрут.
+		</div>
+	</div>
+</div>

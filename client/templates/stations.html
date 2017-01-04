@@ -1,0 +1,80 @@
+<div class="container" style="padding: 5px 0;">
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<button class="btn btn-default" data-toggle="modal" data-target="#create-station" ng-click="newStation = {}">Добавить остановку</button>
+	</div>
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<span>Фильтр: </span>
+		<input type="text" class="form-control" ng-model="search.$" style="display: inline-block; width: 40%;">
+	</div>
+</div>
+<div class="list-container">
+	<table ng-if="stations.length > 0">
+		<thead>
+			<tr>
+				<th>Название остановки</th>
+				<th></th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="station in stations | filter:search:strict | orderBy:station.station_name:reverse">
+				<td class="col-lg-5 col-md-5 col-sm-5 col-xs-5">
+					<a href="/#/admin/station/view/{{station.id}}">{{station.name}}</a>
+				</td>
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<span class="btn btn-link" ng-click="setCurrentStation(station);" data-toggle="modal" data-target="#update-station">Редактировать</span>
+				</td>
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<span class="btn btn-link" ng-click="removeStation(station.id);">Удалить</span>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<div ng-if="stations.length == 0" class="alert alert-warning" role="alert">
+		На данный момент нет ни одной остановки.
+	</div>
+</div>
+
+<div class="modal fade" id="create-station">
+	<div class="modal-dialog">
+		<form ng-submit="createStation();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Новая остановка</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" placeholder="Название остановки" class="form-control" ng-model="newStation.name" pattern="[А-Я A-Z \d]{1}(\w|[А-Я а-я \d \- / №]){0,44}">
+						<i class="glyphicon glyphicon-wrench"></i>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div class="modal fade" id="update-station">
+	<div class="modal-dialog">
+		<form ng-submit="updateStation();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Редактирование остановки</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" placeholder="Название остановки" class="form-control" ng-model="currentStation.name">
+						<i class="glyphicon glyphicon-wrench"></i>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-model-edit">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>

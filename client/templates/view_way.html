@@ -1,0 +1,25 @@
+<div class="container" style="padding: 5px 0;">
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<a href="#/admin/way/edit/{{wayInfo.way.id}}" class="btn btn-default">Редактировать путь</a>
+	</div>
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<a href="#/admin/schedule/view/{{wayInfo.way.id}}" class="btn btn-default">Расписание</a>
+	</div>
+</div>
+<div class="container">
+	<div class="container-fluid way-info-container">
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">Маршрут транспорта: <br />
+			<a href="#/admin/transport/view/{{wayInfo.way.transport_id}}">{{wayInfo.way.transport_type}} №{{wayInfo.way.transport_number}}</a>
+		</h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">От станции:<br /><a href="#/admin/station/view/{{wayInfo.way.station_from_id}}">{{wayInfo.way.station_from_name}}</a></h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">До станции:<br />
+			<a href="#/admin/station/view/{{wayInfo.way.station_to_id}}">{{wayInfo.way.station_to_name}}</a>
+		</h3>
+	</div>
+	<ul>
+		<li ng-repeat="station in wayInfo.stations | orderBy:station.queue:reverse" class="station-list">
+			<a href="#/admin/station/view/{{station.station_id}}">{{station.station_name}}</a>
+			<i class="next-station glyphicon glyphicon-arrow-down" ng-if="!$last"></i>
+		</li>
+	</ul>
+</div>

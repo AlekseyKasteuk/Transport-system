@@ -1,0 +1,82 @@
+<div class="container" style="padding: 5px 0;">
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<button class="btn btn-default" data-toggle="modal" data-target="#create-way" ng-click="getFields();">Добавить путь</button>
+	</div>
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<span>Фильтр: </span>
+		<input type="text" class="form-control" ng-model="search.$" style="display: inline-block; width: 40%;">
+	</div>
+</div>
+<div class="list-container">
+	<h1>Список маршрутов для города {{user.city.name}}</h1>
+	<table ng-if="ways.length > 0">
+		<thead>
+			<tr>
+				<th>Номер транспорта</th>
+				<th>Тип транспорта</th>
+				<th>Путь</th>
+				<th>Путь</th>
+				<th></th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="way in ways | filter:search:strict | orderBy:way.transport_number:reverse">
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<a href="/#/admin/transport/view/{{way.transport_id}}">{{way.transport_number}}</a>
+				</td>
+				<td class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
+					{{way.transport_type}}
+				</td>
+				<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+					<a href="/#/admin/way/view/{{way.way_1_id}}">{{way.way_1_from_to}}</a>
+				</td>
+				<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+					<a href="/#/admin/way/view/{{way.way_2_id}}">{{way.way_2_from_to}}</a>
+				</td>
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<span class="btn btn-link" ng-click="removeWay({way1: way.way_1_id, way2: way.way_2_id});">Удалить</span>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<div ng-if="ways.length == 0" class="alert alert-warning" role="alert">
+		На данный момент нет ни одного пути.
+	</div>
+</div>
+
+<div class="modal fade" id="create-way">
+	<div class="modal-dialog modal-lg">
+		<form ng-submit="createWay();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Новый путь</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<select ng-model="newWay.transport" class="form-control">
+							<option selected disabled value="">Выберите транспорт</option>
+							<option ng-repeat="transport in fields.transports" value="{{transport.id}}">{{transport.number}} {{transport.transport_type_name}}</option>
+						</select>
+					</div>
+					<div class="form-element">
+						<select ng-model="newWay.station_from" class="form-control">
+							<option selected disabled value="">Выберите остановку отправления</option>
+							<option ng-repeat="station in fields.stations" value="{{station.id}}">{{station.name}}</option>
+						</select>
+					</div>
+					<div class="form-element">
+						<select ng-model="newWay.station_to" class="form-control">
+							<option selected disabled value="">Выберите остановку прибытия</option>
+							<option ng-repeat="station in fields.stations" value="{{station.id}}">{{station.name}}</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>

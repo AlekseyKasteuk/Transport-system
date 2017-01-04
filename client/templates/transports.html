@@ -1,0 +1,111 @@
+<div class="container" style="padding: 5px 0;">
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<button class="btn btn-default" data-toggle="modal" data-target="#create-transport" ng-click="newTransport = {}; getRelativeElements();">Добавить транспорт</button>
+	</div>
+	<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: center;">
+		<span>Фильтр: </span>
+		<input type="text" class="form-control" ng-model="search.$" style="display: inline-block; width: 40%;">
+	</div>
+</div>
+<div class="list-container">
+	<table ng-if="transports.length > 0">
+		<thead>
+			<tr>
+				<th>Номер</th>
+				<th>Тип</th>
+				<th>Парк</th>
+				<th></th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr ng-repeat="transport in transports | filter:search:strict | orderBy:transport.transport_number:reverse">
+				<td class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
+					<a href="/#/admin/transport/view/{{transport.id}}">{{transport.number}}</a>
+				</td>
+				<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+					{{transport.transport_type_name}}
+				</td>
+				<td class="col-lg-4 col-md-4 col-sm-4 col-xs-4">
+					<a href="/#/admin/park/view/{{transport.park_id}}">{{transport.park_name}}</a>
+				</td>
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<span class="btn btn-link" ng-click="setCurrentTransport(transport);" data-toggle="modal" data-target="#update-transport">Редактировать</span>
+				</td>
+				<td class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+					<span class="btn btn-link" ng-click="removeTransport(transport.id);">Удалить</span>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<div ng-if="transports.length == 0" class="alert alert-warning" role="alert">
+		На данный момент нет ни одного транспорта.
+	</div>
+</div>
+
+<div class="modal fade" id="create-transport">
+	<div class="modal-dialog">
+		<form ng-submit="createTransport();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Новый транспорт</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" name="parkname" placeholder="Номер транспорта" class="form-control" ng-model="newTransport.number" pattern="\d{1,3}([А-Я])?" placeholder="Ввелите номер транспорта">
+						<i class="glyphicon glyphicon-wrench"></i>
+					</div>
+					<div class="form-element">
+						<select ng-model="newTransport.type" class="form-control">
+						<option value="" disabled selected>Выберите вид транспорта</option> 
+							<option ng-repeat="type in types" value="{{type.id}}">{{type.name}}</option>
+						</select>
+					</div>
+					<div class="form-element">
+						<select ng-model="newTransport.park" class="form-control">
+							<option value="" disabled selected>Выберите парк</option> 
+							<option ng-repeat="park in parks" value="{{park.id}}">{{park.name}}</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-model">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+<div class="modal fade" id="update-transport">
+	<div class="modal-dialog">
+		<form ng-submit="updateTransport();" class="login-form">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Редактирование транспорта</h2>
+				</div>
+				<div class="modal-body">
+					<div class="form-element">
+						<input type="text" placeholder="Номер транспорта" class="form-control" ng-model="currentTransport.number" pattern="\d{1,3}([А-Я])?" placeholder="Ввелите номер транспорта">
+						<i class="glyphicon glyphicon-wrench"></i>
+					</div>
+					<div class="form-element">
+						<select ng-model="currentTransport.type" class="form-control">
+						<option value="" disabled selected>Выберите вид транспорта</option> 
+							<option ng-repeat="type in types" value="{{type.id}}">{{type.name}}</option>
+						</select>
+					</div>
+					<div class="form-element">
+						<select ng-model="currentTransport.park" class="form-control">
+							<option value="" disabled selected>Выберите парк</option> 
+							<option ng-repeat="park in parks" value="{{park.id}}">{{park.name}}</option>
+						</select>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button data-dismiss="modal" class="btn btn-default" id="close-model-edit">Закрыть</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>

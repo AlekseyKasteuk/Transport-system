@@ -1,0 +1,1270 @@
+index.js
+
+var express = require('express');
+var router = express.Router();
+
+router.get('/login', require('./authorization').checkLogin);
+router.post('/login', require('./authorization').login);
+router.get('/logout', require('./authorization').logout);
+
+router.get('/parks', require('./parks').getParks);
+router.post('/park', require('./parks').createPark);
+router.put('/park/:id', require('./parks').updatePark);
+router.delete('/park/:id', require('./parks').deletePark);
+router.get('/park/view/:id', require('./parks').getParkView);
+
+router.get('/transport/types', require('./transport').getTypes);
+router.get('/transports', require('./transport').getTransports);
+router.post('/transport', require('./transport').createTransport);
+router.delete('/transport/:id', require('./transport').deleteTransport);
+router.get('/transport/view/:id', require('./transport').getTransportView);
+router.put('/change/transport', require('./transport').updateTransport);
+
+router.get('/stations', require('./station').getStations);
+router.post('/station', require('./station').createStation);
+router.delete('/station/:id', require('./station').deleteStation);
+router.post('/available/stations', require('./station').getAvailableStations);
+router.get('/station/view/:id', require('./station').getStationView);
+router.put('/change/station', require('./station').updateStation);
+
+router.get('/ways', require('./way').getWays);
+router.get('/fields/way', require('./way').getWayFields);
+router.post('/way', require('./way').createWay);
+router.delete('/ways', require('./way').deleteWays);
+router.get('/way/:id', require('./way').getWay);
+router.post('/edit/way/stations/:id', require('./way').setStations);
+router.put('/change/way/:id', require('./way').changeWay);
+
+router.get('/schedule/edit/:id', require('./schedule').getEditInfo);
+router.post('/schedule/save', require('./schedule').saveSchedule);
+router.get('/schedule/:id', require('./schedule').getScheduleForWay);
+
+router.get('/home', require('./home').getHome);
+
+
+module.exports = router;
+
+
+home.js
+
+var connection = require('../utiles/connection');
+
+module.exports.getHome = function (req, res, next) {
+	if (!req.session.passport) { 
+		res.status(404).send([]);
+		return;
+	}
+
+	if (!req.session.passport.user) { 
+		res.status(404).send([]);
+		return;
+	}
+
+	if (!req.session.passport.user.city) { 
+		res.status(400).send([]);
+		return;
+	}
+
+	var query = "SELECT \
+					tr.number as transport_number, \
+					tr.id as transport_id, \
+			        tr.transport_type as transport_type, \
+			        tr_to_w.id, \
+			        w1.id as way_1_id, \
+			        w1.from_to as way_1_from_to, \
+			        w2.id as way_2_id, \
+			        w2.from_to as way_2_from_to  \
+				FROM transport_to_way as tr_to_w \
+				INNER JOIN \
+					( \
+				    SELECT tr.id, tr.number, tr_type.name as transport_type, tr.city \
+				    FROM transport as tr \
+				    INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id \
+					) as tr ON tr.id = tr_to_w.transport \
+				INNER JOIN ( \
+					SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to \
+				    FROM way as w \
+					INNER JOIN station as st_from ON w.station_from = st_from.id \
+					INNER JOIN station as st_to ON w.station_to = st_to.id \
+				) as w1 ON w1.id = tr_to_w.way_1 \
+				INNER JOIN ( \
+					SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to \
+				    FROM way as w \
+					INNER JOIN station as st_from ON w.station_from = st_from.id \
+					INNER JOIN station as st_to ON w.station_to = st_to.id \
+				) as w2 ON w2.id = tr_to_w.way_2 \
+				WHERE tr.city = " + req.session.passport.user.city;
+
+	connection.query(query, function (err, transports) {
+		if (err) { 
+			res.send(400).send([]); 
+			return; 
+		}
+
+		if (!transports.length) {
+			res.send(200).send([]);
+			return;
+		}
+
+		query = "SELECT station.name as station_name, station_to_way.way as station_way, station.id as station_id, GROUP_CONCAT(DISTINCT sch_weekend.time ORDER BY sch_weekend.time) as 'weekend', GROUP_CONCAT(DISTINCT sch_weekday.time ORDER BY sch_weekday.time) as 'weekday' \
+				FROM station_to_way \
+				INNER JOIN station ON station.id = station_to_way.station \
+				INNER JOIN schedule as sch_weekend ON sch_weekend.station_to_way = station_to_way.id AND sch_weekend.is_weekend = 1 \
+				INNER JOIN schedule as sch_weekday ON sch_weekday.station_to_way = station_to_way.id AND sch_weekday.is_weekend = 0 \
+				WHERE ";
+
+				var subquery = [];
+
+				transports.forEach(function (tr) {
+					subquery.push('station_to_way.way = ' + tr.way_1_id);
+					subquery.push('station_to_way.way = ' + tr.way_2_id);
+				});
+
+				query += subquery.join(' OR ') + 
+				" GROUP BY station_to_way.id  \
+				ORDER BY station_to_way.queue;";
+
+		connection.query(query, function (err, schedules) {
+			if (err) { return next(err); }
+			
+			for (var k = 0; k < schedules.length; k++) {
+				schedules[k].weekend = schedules[k].weekend.split(',');
+				schedules[k].weekday = schedules[k].weekday.split(',');
+
+				var weekend = [];
+				var weekday = [];
+				var temp;
+
+				for(var i = 0; i < schedules[k].weekend.length; i++) {
+					var j = i + 1;
+					temp = schedules[k].weekend[i].split(':');
+					temp.splice(2, 1);
+					var arr = [temp.join(':')];
+					while (j < schedules[k].weekend.length) {
+						if (schedules[k].weekend[j].split(':')[0] > schedules[k].weekend[i].split(':')[0] ||
+							(schedules[k].weekend[j].split(':')[0] == '00' && schedules[k].weekend[i].split(':')[0] == '23')) { break; }
+						else {
+							temp = schedules[k].weekend[j].split(':');
+							temp.splice(2, 1);
+							arr.push(temp.join(':'));
+							i++;
+							j++;
+						}
+					}
+					console.log(arr.join(' '));
+					weekend.push(arr.join(' '));
+				}
+
+				for(var i = 0; i < schedules[k].weekday.length; i++) {
+					var j = i + 1;
+					temp = schedules[k].weekday[i].split(':');
+					temp.splice(2, 1);
+					var arr = [temp.join(':')];
+					while (j < schedules[k].weekday.length) {
+						if (schedules[k].weekday[j].split(':')[0] > schedules[k].weekday[i].split(':')[0] ||
+							(schedules[k].weekday[j].split(':')[0] == '00' && schedules[k].weekday[i].split(':')[0] == '23')) { break; }
+						else {
+							temp = schedules[k].weekday[j].split(':');
+							temp.splice(2, 1);
+							arr.push(temp.join(':'));
+							i++;
+							j++;
+						}
+					}
+					weekday.push(arr.join(' '));
+				}
+
+				schedules[k].weekend = weekend;
+				schedules[k].weekday = weekday;
+			}
+
+			var result = [];
+
+			transports.forEach(function (tr) {
+
+				var way_1 = {
+					name: tr.way_1_from_to,
+					stations: []
+				}
+
+				var way_2 = {
+					name: tr.way_2_from_to,
+					stations: []
+				}
+
+				for(var i = schedules.length - 1; i >= 0; i--) {
+
+					if (schedules[i].station_way == tr.way_1_id) {
+						way_1.stations.unshift(schedules[i]);
+						schedules.splice(i, 1);
+					}
+
+				}
+
+				for(var i = schedules.length - 1; i >= 0; i--) {
+
+					if (schedules[i].station_way == tr.way_2_id) {
+						way_2.stations.unshift(schedules[i]);
+						schedules.splice(i, 1);
+					}
+
+				}
+
+				result.push({
+					transport: {
+						number: tr.transport_number,
+						type: tr.transport_type
+					},
+					way_1 : way_1,
+					way_2: way_2
+				});
+			});
+
+			res.status(200).send(result);
+		});
+	})
+
+}
+
+authorization.js
+
+var passport = require('../utiles/auth');
+var connection = require('../utiles/connection');
+
+module.exports.login = function (req, res, next) {
+	passport.authenticate('local', function (err, user, info) {
+		if (err) { return next(err); }
+
+		if (!user) { return res.status(401).end(); }
+
+		req.logIn(user, function (err) {
+			
+			if (err) { return next(err); }
+
+			return res.status(200).end();
+
+		});
+
+	})(req, res, next);
+}
+
+module.exports.checkLogin = function (req, res, next) {
+	if(!req.session.passport) { 
+		return res.status(401).end();
+	}
+	console.log(req.session);
+	if(req.session.passport.user === undefined) {
+		return res.status(401).end();
+	} else {
+		var query = "SELECT id, username, password, role, role.name as role_name, city, city.name as city_name FROM user " + 
+					"INNER JOIN city USING(id) " + 
+					"INNER JOIN role USING(id) "
+					"WHERE username='" + req.session.passport.user.username +
+					"' AND password='" + req.session.passport.user.password + "' LIMIT 1";
+		connection.query(query, function (err, user) {
+			if (err) { return next(err); }
+			req.session.passport.user.city = user[0].city;
+			return user.length == 0 
+				? res.status(401).end() 
+				: res.status(200).send({username: user[0].username, city: user[0].city_name, role: user[0].role_name});
+		});
+	}
+}
+	
+module.exports.createAccount = function (req, res, next) {
+	
+}
+
+module.exports.logout = function (req, res, next) {
+	req.logout();
+	res.status(200).end();
+}
+
+parks.js
+
+var connection = require('../utiles/connection');
+
+module.exports.getParks = function (req, res, next) {
+
+	var query = "SELECT * FROM park WHERE city=" + req.session.passport.user.city;
+
+	connection.query(query, function (err, parks) {
+		if (err) { return next(err); }
+		res.status(200).send(parks).end();
+	})
+
+}
+
+module.exports.createPark = function (req, res, next) {
+
+	var query = "INSERT INTO park (name, city) VALUES ('" + req.body.name + "', " + req.session.passport.user.city + ")";
+
+	connection.query(query, function (err, parks) {
+		if (err) { return next(err); }
+		res.status(200).end();
+	});
+
+}
+
+module.exports.deletePark = function (req, res, next) {
+
+	var query = "DELETE FROM park WHERE id=" + req.params.id;
+
+	connection.query(query, function (err, parks) {
+		if (err) { return next(err); }
+		res.status(200).send(parks).end();
+	})
+
+}
+
+module.exports.getParkView = function (req, res, next) {
+
+	var query = "SELECT id, name FROM park WHERE id = " + req.params.id;
+
+	connection.query(query, function (err, park) {
+		if (err || !park.length) { return next(); }
+
+		query = "SELECT tr.id, tr.number, tr_type.name as type FROM transport as tr \
+				INNER JOIN transport_type as tr_type ON tr_type.id = tr.transport_type \
+				WHERE tr.park = " + req.params.id;
+		connection.query(query, function (err, transports) {
+			if(err) { return next(); }
+
+			res.status(200).send({park: park[0], transports: transports});
+		});
+	})
+
+}
+
+module.exports.updatePark = function (req, res, next) {
+
+	if (!req.body.name) { return next(); }
+	
+	var query = "UPDATE park SET name = '" + req.body.name + "' WHERE id = " + req.params.id;
+
+	connection.query(query, function (err) {
+		if (err) { return next(); }
+
+		res.status(200).end();
+	})
+
+}
+
+
+schedule.js
+
+var connection = require('../utiles/connection');
+
+module.exports.getEditInfo = function (req, res, next) {
+	var query = "SELECT \
+					w.id, \
+					way_info.tr_id as transport_id, \
+					way_info.tr_number as transport_number, \
+					way_info.tr_type as transport_type, \
+					st_from.name as station_from_name, \
+					st_from.id as station_from_id, \
+					st_to.name as station_to_name, \
+					st_to.id as station_to_id \
+				FROM way AS w \
+				INNER JOIN \
+				( \
+					SELECT tr_id, tr_number, tr_type, tr_to_w.way_1, tr_to_w.way_2 \
+					FROM transport_to_way as tr_to_w \
+					INNER JOIN \
+					( \
+						SELECT tr.id as tr_id, tr.number as tr_number, tr_type.name AS tr_type \
+						FROM transport as tr \
+						INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id  \
+					) as tr ON tr_to_w.transport = tr.tr_id \
+				) as way_info \
+				ON w.id = way_info.way_1 OR w.id = way_info.way_2 \
+				INNER JOIN station as st_from \
+				ON w.station_from = st_from.id \
+				INNER JOIN station as st_to \
+				ON w.station_to = st_to.id " +
+				"WHERE w.id=" + req.params.id;
+
+	connection.query(query, function (err, way) {
+
+		if (err) { return next(); }
+
+		if (!way.length) { return next(); } 
+
+		query = "SELECT st_to_w.id, st.name as station_name, st.id as station_id, st_to_w.queue, st_to_w.duration_to_next  \
+					FROM station_to_way as st_to_w \
+					INNER JOIN station as st ON st.id = st_to_w.station \
+					WHERE st_to_w.way=" + req.params.id +
+					" ORDER BY queue";
+
+		connection.query(query, function (err, stations) {
+			if (err) { return next(err); }
+			
+			query = "SELECT * FROM arrival WHERE way = " + req.params.id;
+
+			connection.query(query, function (err, arrivals) {
+				if (err) { arrivals = []; }
+
+				var sortedArrivals = {
+					weekend: [],
+					weekday: []
+				}
+
+				arrivals.forEach(function (arr) {
+					arr.time_from = arr.time_from.split(':').splice(0, 2).join(':');
+					arr.time_to = arr.time_to.split(':').splice(0, 2).join(':');
+					if (arr.is_weekend) {
+						sortedArrivals.weekend.push(arr);
+					} else {
+						sortedArrivals.weekday.push(arr);
+					}
+				});
+
+				res.status(200).send({ way: way[0], stations: stations, arrivals: sortedArrivals });
+			})
+		});
+
+	});
+}
+
+function createSchedule (info) {
+	var i,
+		weekend = info.arrivals.weekend,
+		weekday = info.arrivals.weekday;
+
+	var validateWeekend = false;
+	var validateWeekday = false;
+
+	for(i = 0; i < weekend.length; i++) {
+
+		if ( weekend[i].time_from > '02:00' && weekend[i].time_from < '04:00' &&
+			weekend[i].time_to > '02:00' && weekend[i].time_to < '04:00' ) {
+			validateWeekend = true;
+			break;
+		}
+
+		if ( weekend[i].time_from > weekend[i].time_to && 
+			!(
+				weekend[i].time_from >= '04:00' && weekend[i].time_from <= '23:59' &&
+				weekend[i].time_to >= '00:00' && weekend[i].time_to <= '02:00'
+			) ) {
+
+			validateWeekend = true;
+			break;
+
+		}
+		if (i == 0) { continue; }
+
+		if ( weekend[i].time_from < weekend[i - 1].time_to && 
+			!(
+				weekend[i - 1].time_to >= '04:00' && weekend[i - 1].time_to <= '23:59' &&
+				weekend[i].time_from >= '00:00' && weekend[i].time_from <= '02:00'
+			) ) {
+
+			validateWeekend = true;
+			break;
+
+		}
+	}
+
+	for(i = 0; i < weekday.length; i++) {
+
+		if ( weekday[i].time_from > '02:00' && weekday[i].time_from < '04:00' &&
+			weekday[i].time_to > '02:00' && weekday[i].time_to < '04:00' ) {
+			validateWeekday = true;
+			break;
+		}
+
+		if ( weekday[i].time_from > weekday[i].time_to && 
+			!(
+				weekday[i].time_from >= '04:00' && weekday[i].time_from <= '23:59' &&
+				weekday[i].time_to >= '00:00' && weekday[i].time_to <= '02:00'
+			) ) {
+
+			validateWeekday = true;
+			break;
+
+		}
+		if (i == 0) { continue; }
+
+		if ( weekday[i].time_from < weekday[i - 1].time_to && 
+			!(
+				weekday[i - 1].time_to >= '04:00' && weekday[i - 1].time_to <= '23:59' &&
+				weekday[i].time_from >= '00:00' && weekday[i].time_from <= '02:00'
+			) ) {
+
+			validateWeekday = true;
+			break;
+
+		}
+	}
+
+	if (validateWeekday || validateWeekend) {
+		return;
+	}
+
+	var schedule = [];
+	var stations = [];
+	var j, k, wendTimes, wdayTimes;
+
+	function calculateTime (time, plus) {
+		var t = time.split(':').map(function (val) {
+			return +val;
+		});
+		t[1] += plus;
+		t[0] = (t[0] + Math.floor(t[1] / 60)) % 24;
+		t[1] %= 60;
+
+		if (t[0] < 10){ t[0] = '0' + t[0] } 
+		if (t[1] < 10){ t[1] = '0' + t[1] } 
+
+		return t.join(':');
+	}
+
+	function calculateTimeByTime (time_from, time_to, interval) {
+		var time = time_from;
+		var i = 0;
+		while (time < time_to || 
+			(
+				time >= '04:00' && time <= '23:59' &&
+				time_to >= '00:00' && time_to <= '02:00'
+			) ) {
+			time = calculateTime(time, +interval);
+			i++;
+		}
+		return i;
+	}
+
+	for (i = 0; i < info.stations.length; i++) {
+		k = 0;
+		for(j = 0; j < i; j++) {
+			k += +info.stations[j].duration_to_next;
+		}
+		wendTimes = [];
+		wdayTimes = [];
+
+		for (j = 0; j < info.arrivals.weekday.length; j++) {
+			weekday = info.arrivals.weekday[j];
+			var count = calculateTimeByTime(weekday.time_from, weekday.time_to, +weekday.interval);
+			var time = weekday.time_from;
+			for (var h = 0; h < count; h++) {
+				wdayTimes.push(calculateTime(time, k));
+				time = calculateTime(time, +weekday.interval);
+			}
+		}
+
+		for (j = 0; j < info.arrivals.weekend.length; j++) {
+			weekend = info.arrivals.weekend[j];
+			var count = calculateTimeByTime(weekend.time_from, weekend.time_to, +weekend.interval);
+			var time = weekend.time_from;
+			for (var h = 0; h < count; h++) {
+				wendTimes.push(calculateTime(time, k));
+				time = calculateTime(time, +weekend.interval);
+			}
+		}
+		stations.push({
+			transport: info.way.transport_id,
+			station: info.stations[i].id,
+			weekend: wendTimes,
+			weekday: wdayTimes
+		});
+
+	}
+
+	return stations;
+}
+
+module.exports.saveSchedule = function (req, res, next) {
+	var query = "";
+	var i;
+	for(i = 0; i < req.body.stations.length; i++) {
+		query += "UPDATE station_to_way SET duration_to_next = " + req.body.stations[i].duration_to_next + " WHERE id = " + req.body.stations[i].id + "; "
+	}
+	connection.query(query, function (err) {
+		if (err) { return next(); }
+
+		query = "DELETE FROM arrival WHERE way = " + req.body.way.id;
+
+		connection.query(query, function (err) {
+			console.log(err);
+			if (err) { return next(); }
+
+			var arrivals = req.body.arrivals.weekend.map(function (arr) {
+				return [arr.time_from, arr.time_to, req.body.way.id, arr.interval, 1];
+			});
+
+			arrivals = arrivals.concat(req.body.arrivals.weekday.map(function (arr) {
+					return [arr.time_from, arr.time_to, req.body.way.id, arr.interval, 0];
+				})
+			);
+
+			if (!arrivals.length) { res.status(200).end(); }
+
+			query = "INSERT INTO arrival (time_from, time_to, way, `interval`, is_weekend) VALUES ?";
+
+			connection.query(query, [arrivals], function (err) {
+				console.log(err);
+				if (err) { return next(); }
+
+				query = '';
+
+				for(i = 0; i < req.body.stations.length; i++) {
+					query += "DELETE FROM schedule WHERE station_to_way = " + req.body.stations[i].id + "; "
+				}
+
+				connection.query(query, function (err) {
+					if (err) { return next(); }
+
+					var schedules = createSchedule(req.body);
+					var scheduleElements = [];
+					query = "INSERT INTO schedule (transport, station_to_way, time, is_weekend) VALUES ?";
+
+					schedules.forEach(function (schedule) {
+						schedule.weekend.forEach(function (time) {
+							scheduleElements.push([schedule.transport, schedule.station, time, 1]);
+						});
+						schedule.weekday.forEach(function (time) {
+							scheduleElements.push([schedule.transport, schedule.station, time, 0]);
+						});
+					});
+
+					console.log(scheduleElements);
+
+					connection.query(query, [scheduleElements], function (err) {
+						console.log(err);
+						if (err) { return next(); }
+
+						res.status(200).end();
+					});
+
+				});
+			})
+		})
+
+	})
+}
+
+module.exports.getScheduleForWay = function (req, res, next) {
+	var query = "SELECT \
+					w.id, \
+					way_info.tr_id as transport_id, \
+					way_info.tr_number as transport_number, \
+					way_info.tr_type as transport_type, \
+					st_from.name as station_from_name, \
+					st_from.id as station_from_id, \
+					st_to.name as station_to_name, \
+					st_to.id as station_to_id \
+				FROM way AS w \
+				INNER JOIN \
+				( \
+					SELECT tr_id, tr_number, tr_type, tr_to_w.way_1, tr_to_w.way_2 \
+					FROM transport_to_way as tr_to_w \
+					INNER JOIN \
+					( \
+						SELECT tr.id as tr_id, tr.number as tr_number, tr_type.name AS tr_type \
+						FROM transport as tr \
+						INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id  \
+					) as tr ON tr_to_w.transport = tr.tr_id \
+				) as way_info \
+				ON w.id = way_info.way_1 OR w.id = way_info.way_2 \
+				INNER JOIN station as st_from \
+				ON w.station_from = st_from.id \
+				INNER JOIN station as st_to \
+				ON w.station_to = st_to.id " +
+				"WHERE w.id=" + req.params.id;
+
+	connection.query(query, function (err, way) {
+
+		if (err) { return next(); }
+
+		if (!way.length) { return next(); } 
+
+		query = "SELECT station.name as station_name, station.id as station_id, GROUP_CONCAT(DISTINCT sch_weekend.time ORDER BY sch_weekend.time) as 'weekend', GROUP_CONCAT(DISTINCT sch_weekday.time ORDER BY sch_weekday.time) as 'weekday' \
+				FROM station_to_way \
+				INNER JOIN station ON station.id = station_to_way.station \
+				INNER JOIN schedule as sch_weekend ON sch_weekend.station_to_way = station_to_way.id AND sch_weekend.is_weekend = 1 \
+				INNER JOIN schedule as sch_weekday ON sch_weekday.station_to_way = station_to_way.id AND sch_weekday.is_weekend = 0 \
+				WHERE station_to_way.way = " + req.params.id + 
+				" GROUP BY station_to_way.id  \
+				ORDER BY station_to_way.queue;";
+
+		connection.query(query, function (err, schedules) {
+			if (err) { return next(err); }
+			
+			for (var k = 0; k < schedules.length; k++) {
+				schedules[k].weekend = schedules[k].weekend.split(',');
+				schedules[k].weekday = schedules[k].weekday.split(',');
+
+				var weekend = [];
+				var weekday = [];
+				var temp;
+
+				for(var i = 0; i < schedules[k].weekend.length; i++) {
+					var j = i + 1;
+					temp = schedules[k].weekend[i].split(':');
+					temp.splice(2, 1);
+					var arr = [temp.join(':')];
+					while (j < schedules[k].weekend.length) {
+						if (schedules[k].weekend[j].split(':')[0] > schedules[k].weekend[i].split(':')[0] ||
+							(schedules[k].weekend[j].split(':')[0] == '00' && schedules[k].weekend[i].split(':')[0] == '23')) { break; }
+						else {
+							temp = schedules[k].weekend[j].split(':');
+							temp.splice(2, 1);
+							arr.push(temp.join(':'));
+							i++;
+							j++;
+						}
+					}
+					console.log(arr.join(' '));
+					weekend.push(arr.join(' '));
+				}
+
+				for(var i = 0; i < schedules[k].weekday.length; i++) {
+					var j = i + 1;
+					temp = schedules[k].weekday[i].split(':');
+					temp.splice(2, 1);
+					var arr = [temp.join(':')];
+					while (j < schedules[k].weekday.length) {
+						if (schedules[k].weekday[j].split(':')[0] > schedules[k].weekday[i].split(':')[0] ||
+							(schedules[k].weekday[j].split(':')[0] == '00' && schedules[k].weekday[i].split(':')[0] == '23')) { break; }
+						else {
+							temp = schedules[k].weekday[j].split(':');
+							temp.splice(2, 1);
+							arr.push(temp.join(':'));
+							i++;
+							j++;
+						}
+					}
+					weekday.push(arr.join(' '));
+				}
+
+				schedules[k].weekend = weekend;
+				schedules[k].weekday = weekday;
+			}
+
+			res.status(200).send({way: way[0], schedules: schedules});
+		});
+	});
+}
+
+station.js
+
+var connection = require('../utiles/connection');
+
+module.exports.getStations = function (req, res, next) {
+
+	var query = "SELECT id, name FROM station WHERE city=" + req.session.passport.user.city;
+
+	connection.query(query, function (err, stations) {
+		if (err) { return next(err); }
+		res.status(200).send(stations).end();
+	})
+}
+
+module.exports.createStation = function (req, res, next) {
+
+	var query = "INSERT INTO station (name, city) VALUES ('" + req.body.name + "', " + req.session.passport.user.city + ")";
+
+	connection.query(query, function (err) {
+		if (err) { return next(err); }
+		res.status(200).end();
+	});
+
+}
+
+module.exports.deleteStation = function (req, res, next) {
+
+	var query = "DELETE FROM station WHERE id=" + req.params.id;
+
+	connection.query(query, function (err) {
+		if (err) { return next(err); }
+		res.status(200).end();
+	})
+
+}
+
+module.exports.getStationView = function (req, res, next) {
+
+	var query = "SELECT name, id FROM station WHERE id = " + req.params.id;
+
+	connection.query(query, function (err, station) {
+		if (err) { return next(); }
+
+		if (!station.length) { return res.status(404).end(); }
+
+		query = "SELECT  \
+					tr_to_w.transport_id as id,  \
+					tr_to_w.transport_number as number,  \
+					tr_to_w.transport_type as type, \
+					tr_to_w.park_id, \
+					tr_to_w.park_name \
+				FROM station_to_way as st_to_w \
+				INNER JOIN  \
+				( \
+					SELECT  \
+						tr_to_w.way_1,  \
+						tr_to_w.way_2,  \
+						tr.id as transport_id,  \
+						tr.number as transport_number,  \
+						tr.type as transport_type, \
+						tr.park_id, \
+						tr.park_name \
+				    FROM transport_to_way as tr_to_w \
+				    INNER JOIN  \
+				    ( \
+						SELECT tr.id, tr.number, tr_type.name as type, p.id as park_id, p.name as park_name\
+				        FROM transport as tr \
+				        INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id \
+				        INNER JOIN park as p ON p.id = tr.park \
+				    )as tr ON tr.id = tr_to_w.transport \
+				) as tr_to_w \
+				ON tr_to_w.way_1 = st_to_w.way OR tr_to_w.way_2 = st_to_w.way \
+				WHERE st_to_w.station = " + req.params.id + 
+				" GROUP BY tr_to_w.transport_id, tr_to_w.park_name";
+		connection.query(query, function (err, transports) {
+			if (err) { transports = []; }
+
+			query = "SELECT  \
+						st_to_w.station,  \
+						w.way_1_id, w.way_1_from_to,  \
+						w.way_2_id, w.way_2_from_to,  \
+						w.transport_id,  \
+						w.transport_number,  \
+						w.transport_type \
+					FROM station_to_way as st_to_w \
+					INNER JOIN  \
+					( \
+						SELECT  \
+							tr.id as transport_id, \
+					        tr.number as transport_number, \
+					        tr.type as transport_type, \
+							w1.id as way_1_id,  \
+							w1.from_to as way_1_from_to,  \
+							w2.id as way_2_id,  \
+							w2.from_to as way_2_from_to   \
+						FROM transport_to_way as tr_to_w  \
+						INNER JOIN (  \
+							SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to  \
+							FROM way as w  \
+							INNER JOIN station as st_from ON w.station_from = st_from.id  \
+							INNER JOIN station as st_to ON w.station_to = st_to.id  \
+						) as w1 ON w1.id = tr_to_w.way_1  \
+						INNER JOIN (  \
+							SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to  \
+							FROM way as w  \
+							INNER JOIN station as st_from ON w.station_from = st_from.id  \
+							INNER JOIN station as st_to ON w.station_to = st_to.id  \
+						) as w2 ON w2.id = tr_to_w.way_2 \
+					    INNER JOIN  \
+					    ( \
+							SELECT tr.id, tr.number, tr_type.name as type \
+					        FROM transport as tr \
+					        INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id \
+					    ) as tr ON tr_to_w.transport = tr.id \
+					) as w ON w.way_1_id = st_to_w.way OR w.way_2_id = st_to_w.way \
+					WHERE st_to_w.station = " + req.params.id + 
+					" GROUP BY w.way_1_id, w.way_2_id";
+			connection.query(query, function (err, ways) {
+				if ( err ) { ways = []; }
+
+				res.status(200).send({station: station[0], transports: transports, ways: ways});
+			})
+		});
+	});
+
+}
+
+module.exports.getAvailableStations = function (req, res, next) {
+	var query = "SELECT id, name FROM station WHERE city=" + req.session.passport.user.city;
+	req.body.forEach(function (id) {
+		query += " AND id != " + id;
+	});
+	connection.query(query, function (err, stations) {
+		if(err) { return next(); }
+
+		res.status(200).send(stations);
+
+	});
+}
+
+
+module.exports.updateStation = function (req, res, next) {
+	if ( !req.body.id && !req.body.name) {
+		return next();
+	}
+	var query = "UPDATE station SET name = '" + req.body.name +
+				"' WHERE id = " + req.body.id;
+	connection.query(query, function (err) {
+		console.log(err);
+		if ( err ) { return next(); }
+
+		res.status(200).end();
+	})
+}
+
+transport.js
+
+var connection = require('../utiles/connection');
+
+module.exports.getTransports = function (req, res, next) {
+
+	var query = "SELECT tr.id, tr.number, tr_type.name as transport_type_name, p.name as park_name, \
+						p.id as park_id, tr_type.id as transport_type_id \
+				FROM transport as tr \
+				INNER JOIN transport_type as tr_type ON tr_type.id = tr.transport_type \
+				INNER JOIN park as p ON p.id = tr.park " + 
+				"WHERE tr.city=" + req.session.passport.user.city +
+				" ORDER BY tr.number";
+
+	connection.query(query, function (err, transports) {
+		if (err) { return next(err); }
+		res.status(200).send(transports).end();
+	})
+}
+
+module.exports.getTypes = function (req, res, next) {
+
+	var query = "SELECT * FROM transport_type";
+
+	connection.query(query, function (err, types) {
+		if (err) { return next(err); }
+		res.status(200).send(types).end();
+	})
+}
+
+module.exports.createTransport = function (req, res, next) {
+
+	console.log(req.body);
+
+	var query = "INSERT INTO transport (transport_type, number, city, park) VALUES (" + 
+		req.body.type + ", '" + req.body.number + "', " + req.session.passport.user.city + ", " +
+		req.body.park + ")";
+
+	connection.query(query, function (err) {
+		if (err) { return next(err); }
+		res.status(200).end();
+	});
+
+}
+
+module.exports.deleteTransport = function (req, res, next) {
+
+	var query = "DELETE FROM transport WHERE id=" + req.params.id;
+
+	connection.query(query, function (err) {
+		if (err) { return next(err); }
+		res.status(200).end();
+	})
+
+}
+
+module.exports.getTransportView = function (req, res, next) {
+
+	var query = "SELECT tr.number, tr_type.name as type FROM transport as tr \
+				INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id \
+				WHERE tr.id = " + req.params.id;
+
+	connection.query(query, function (err, transport) {
+		if (err) { return next(); }
+
+		if (!transport.length) { return res.status(404).end(); }
+
+		query = "SELECT \
+			        tr_to_w.id, \
+			        w1.id as way_1_id, \
+			        w1.from_to as way_1_from_to, \
+			        w2.id as way_2_id, \
+			        w2.from_to as way_2_from_to  \
+				FROM transport_to_way as tr_to_w \
+				INNER JOIN ( \
+					SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to \
+				    FROM way as w \
+					INNER JOIN station as st_from ON w.station_from = st_from.id \
+					INNER JOIN station as st_to ON w.station_to = st_to.id \
+				) as w1 ON w1.id = tr_to_w.way_1 \
+				INNER JOIN ( \
+					SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to \
+				    FROM way as w \
+					INNER JOIN station as st_from ON w.station_from = st_from.id \
+					INNER JOIN station as st_to ON w.station_to = st_to.id \
+				) as w2 ON w2.id = tr_to_w.way_2 \
+				WHERE tr_to_w.transport = " + req.params.id;
+		connection.query(query, function (err, ways) {
+			if (err) { return next(); }
+
+			query = "SELECT st_to_w.id, st_to_w.name \
+					FROM transport_to_way as tr_to_w \
+					INNER JOIN  \
+					( \
+						SELECT \
+							st.id, st.name, st_to_w.way \
+					    FROM station_to_way as st_to_w \
+					    INNER JOIN station as st \
+							ON st_to_w.station = st.id \
+					) as st_to_w  \
+					ON st_to_w.way = tr_to_w.way_1 OR st_to_w.way = tr_to_w.way_2 " + 
+					"WHERE tr_to_w.transport = " + req.params.id +
+					" GROUP BY st_to_w.id \
+					ORDER BY st_to_w.name"
+			connection.query(query, function (err, stations) {
+				if (err) { return next(); }
+
+				res.status(200).send({ transport: transport[0], ways: ways[0], stations: stations });
+			})
+		})
+	});
+
+}
+
+module.exports.updateTransport = function (req, res, next) {
+	if ( !req.body.id && !req.body.number && req.body.type === '' && req.body.park === '' ) {
+		return next();
+	}
+	var query = "UPDATE transport SET number = " + req.body.number + 
+				", transport_type = " + req.body.type +
+				", park = " + req.body.park + 
+				" WHERE id = " + req.body.id;
+	connection.query(query, function (err) {
+		console.log(err);
+		if ( err ) { return next(); }
+
+		res.status(200).end();
+	})
+}
+
+way.js
+
+var connection = require('../utiles/connection');
+
+module.exports.getWays = function (req, res, next) {
+
+	var query = "SELECT \
+					tr.number as transport_number, \
+					tr.id as transport_id, \
+			        tr.transport_type as transport_type, \
+			        tr_to_w.id, \
+			        w1.id as way_1_id, \
+			        w1.from_to as way_1_from_to, \
+			        w2.id as way_2_id, \
+			        w2.from_to as way_2_from_to  \
+				FROM transport_to_way as tr_to_w \
+				INNER JOIN \
+					( \
+				    SELECT tr.id, tr.number, tr_type.name as transport_type, tr.city \
+				    FROM transport as tr \
+				    INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id \
+					) as tr ON tr.id = tr_to_w.transport \
+				INNER JOIN ( \
+					SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to \
+				    FROM way as w \
+					INNER JOIN station as st_from ON w.station_from = st_from.id \
+					INNER JOIN station as st_to ON w.station_to = st_to.id \
+				) as w1 ON w1.id = tr_to_w.way_1 \
+				INNER JOIN ( \
+					SELECT w.id, CONCAT_WS(' - ', st_from.name, st_to.name) as from_to \
+				    FROM way as w \
+					INNER JOIN station as st_from ON w.station_from = st_from.id \
+					INNER JOIN station as st_to ON w.station_to = st_to.id \
+				) as w2 ON w2.id = tr_to_w.way_2 \
+				WHERE tr.city = " + req.session.passport.user.city;
+
+	connection.query(query, function (err, ways) {
+		if (err) { return next(err); }
+		res.status(200).send(ways).end();
+	});
+
+}
+
+module.exports.getWayFields = function (req, res, next) {
+	var query = "SELECT tr.id, tr.number, tr_type.name as transport_type_name, \
+						tr_type.id as transport_type_id FROM transport as tr \
+				INNER JOIN transport_type as tr_type ON tr_type.id = tr.transport_type \
+				WHERE tr.city=" + req.session.passport.user.city +
+				" AND tr.id NOT IN (SELECT transport FROM transport_to_way)";
+	if (req.query.exception) {
+		query += " OR tr.id = " + req.query.exception;
+	}
+	connection.query(query, function (err, transports) {
+
+		if (err) { return next(err); }
+
+		query = "SELECT id, name FROM station WHERE city=" + req.session.passport.user.city;
+
+		connection.query(query, function (err, stations) {
+			if (err) { return next(err); }
+
+			res.status(200).send( { transports: transports, stations: stations } );
+		});
+
+	});
+}
+
+module.exports.createWay = function (req, res, next) {
+
+	var query = "SELECT id FROM transport_to_way WHERE transport=" + req.body.transport;
+
+	connection.query(query, function (err, data) {
+		console.log(err);
+		if (err) { return next(); }
+
+		if (data.length > 0) { return next(); }
+
+		query = "INSERT INTO way (station_from, station_to, transport) VALUES (" + req.body.station_from + "," + 
+				req.body.station_to + ", " + req.body.transport + ")";
+
+		connection.query(query, function (err, way1) {
+			console.log(err);
+			if (err) { return next(); }
+
+			query = "INSERT INTO way (station_from, station_to, transport) VALUES (" + req.body.station_to + "," + 
+					req.body.station_from + ", " + req.body.transport + ")";
+
+			connection.query(query, function (err, way2) {
+				console.log(err);
+				if (err) { return next(); }
+
+				query = "INSERT INTO transport_to_way (transport, way_1, way_2) VALUES (" + req.body.transport + ", " + 
+					way1.insertId + "," + way2.insertId + ");";
+
+				connection.query(query, function (err) {
+					console.log(err);
+					if (err) { return next(); }
+					
+					res.status(200).end();
+				})
+
+			})	
+		});
+	});
+
+}
+
+module.exports.deleteWays = function (req, res, next) {	
+
+	if (req.query.way1 == 'undefined' || req.query.way2 == 'undefined') {
+		return next();
+	}
+
+	var query = "DELETE FROM way WHERE id=" + req.query.way1;
+
+	connection.query(query, function (err) {
+		if (err) { return next(err); }
+
+		query = "DELETE FROM way WHERE id=" + req.query.way2;
+		connection.query(query, function (err) {
+			if (err) { return next(err); }
+
+			res.status(200).end();
+		});
+	});
+
+}
+
+module.exports.getWay = function (req, res, next) {
+
+	var query = "SELECT \
+					w.id, \
+					way_info.tr_id as transport_id, \
+					way_info.tr_number as transport_number, \
+					way_info.tr_type as transport_type, \
+					st_from.name as station_from_name, \
+					st_from.id as station_from_id, \
+					st_to.name as station_to_name, \
+					st_to.id as station_to_id \
+				FROM way AS w \
+				INNER JOIN \
+				( \
+					SELECT tr_id, tr_number, tr_type, tr_to_w.way_1, tr_to_w.way_2 \
+					FROM transport_to_way as tr_to_w \
+					INNER JOIN \
+					( \
+						SELECT tr.id as tr_id, tr.number as tr_number, tr_type.name AS tr_type \
+						FROM transport as tr \
+						INNER JOIN transport_type as tr_type ON tr.transport_type = tr_type.id  \
+					) as tr ON tr_to_w.transport = tr.tr_id \
+				) as way_info \
+				ON w.id = way_info.way_1 OR w.id = way_info.way_2 \
+				INNER JOIN station as st_from \
+				ON w.station_from = st_from.id \
+				INNER JOIN station as st_to \
+				ON w.station_to = st_to.id " +
+				"WHERE w.id=" + req.params.id;
+
+	connection.query(query, function (err, way) {
+
+		if (err) { return next(); }
+
+		if (!way.length) { return next(); } 
+
+		query = "SELECT st_to_w.id, st.name as station_name, st.id as station_id, st_to_w.queue \
+					FROM station_to_way as st_to_w \
+					INNER JOIN station as st ON st.id = st_to_w.station \
+					WHERE st_to_w.way=" + req.params.id +
+					" ORDER BY queue";
+
+		connection.query(query, function (err, stations) {
+			if (err) { return next(err); }
+			res.status(200).send({way: way[0], stations: stations}).end();
+		});
+
+	});
+
+}
+
+
+module.exports.setStations = function (req, res, next) {
+	var query = "DELETE FROM station_to_way WHERE way=" + req.params.id;
+
+	var i = 0;
+	var stations = req.body.map(function (s) {
+		return [s.station_id, req.params.id, i++];
+	});
+
+
+	connection.query(query, function (err) {
+		if (err) { return next(); }
+
+		query = "INSERT INTO station_to_way (station, way, queue) VALUES ?";
+
+		connection.query(query, [stations], function (err) {
+			if (err) { return next(); }
+
+			res.status(200).end(); 
+		})
+	});
+}
+
+module.exports.changeWay = function (req, res, next) {
+	query = "SELECT id, transport, way_1, way_2 FROM transport_to_way WHERE way_1 = " + req.params.id + " OR way_2 = " + req.params.id;
+	connection.query(query, function (err, way) {
+		if (err) { return next(); }
+		if (way.length != 1) { return next(); }
+
+		way = way[0];
+
+		console.log(way);
+
+		query = "UPDATE transport_to_way SET transport=" + req.body.transport + " WHERE id = " + way.id;
+		connection.query(query, function (err) {
+			if (err) { return next(); }
+
+			query = "UPDATE way SET station_from = " + req.body.station_from + 
+					", station_to = " + req.body.station_to +
+					" WHERE id = " + req.params.id;
+			connection.query(query, function (err) {
+				if (err) { return next(); }
+
+				var id = way.way_1 == req.params.id ? way.way_2 : way.way_1;
+
+				query = "UPDATE way SET station_from = " + req.body.station_to + 
+						", station_to = " + req.body.station_from +
+						" WHERE id = " + id;
+				connection.query(query, function (err) {
+					console.log(6);
+					if (err) { return next(); }
+					console.log(7);
+					res.status(200).end();
+				});
+			})
+		});
+	});
+}

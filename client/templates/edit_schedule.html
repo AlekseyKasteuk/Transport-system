@@ -1,0 +1,207 @@
+<div class="container">
+
+	<h1>Изменение расписания</h1>
+
+	<div class="container-fluid way-info-container info-wrapper">
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">Маршрут транспорта: <br />
+			<a href="#/admin/transport/view/{{scheduleInfo.way.transport_id}}">{{scheduleInfo.way.transport_type}} №{{scheduleInfo.way.transport_number}}</a>
+		</h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">От станции:<br /><a href="#/admin/station/view/{{scheduleInfo.way.station_from_id}}">{{scheduleInfo.way.station_from_name}}</a></h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">До станции:<br />
+			<a href="#/admin/station/view/{{scheduleInfo.way.station_to_id}}">{{scheduleInfo.way.station_to_name}}</a>
+		</h3>
+	</div>
+
+	<form ng-submit="saveSchedule();">
+	
+		<div class="container-fluid" style="padding: 5px 0;">
+			<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: right; padding: 5px;">
+				<button type="submit" class="btn btn-primary">Сохранить</button>
+			</div>
+			<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: left; padding: 5px;">
+				<a href="" class="btn btn-default" ng-click="getSchedule();">Сбросить</a>
+			</div>
+		</div>
+
+		<h3>Время отправления в будний день</h3>
+		<div style="padding: 0 0 5px; text-align: center;">
+			<a href="" class="btn btn-primary" ng-click="addArrival(false);">Добавить время отправления</a>
+		</div>
+		<div class="info-wrapper" ng-if="scheduleInfo.arrivals.weekday.length > 0">
+			<table class="table table-striped">
+				<thead>
+					<tr>
+						<th>Начало интервала</th>
+						<th>Окончание интервала</th>
+						<th>Периодичность</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="arrival in scheduleInfo.arrivals.weekday">
+						<td class="col-lg-3 col-md-3 col-sx-3 col-sm-3">
+							<div class="form-element" style="width: 175px; margin: 0 auto;">
+								<input required type="text" maxlength="5" placeholder="hh:mm" class="form-control" ng-model="arrival.time_from" pattern="([0 1]\d|2\d):[0-5]\d">
+								<i class="glyphicon glyphicon-time"></i>
+							</div>
+						</td>
+						<td class="col-lg-3 col-md-3 col-sx-3 col-sm-3">
+							<div class="form-element" style="width: 175px; margin: 0 auto;">
+								<input required type="text" maxlength="5" placeholder="hh:mm" class="form-control" ng-model="arrival.time_to" pattern="([0 1]\d|2\d):[0-5]\d">
+								<i class="glyphicon glyphicon-time"></i>
+							</div>
+						</td>
+						<td class="col-lg-3 col-md-3 col-sx-3 col-sm-3">
+							<div class="form-element" style="width: 175px; margin: 0 auto;">
+								<input required type="number" placeholder="Введите интервал" class="form-control" ng-model="arrival.interval" min="1" max="999">
+								<i class="glyphicon glyphicon-time"></i>
+							</div>
+						</td>
+						<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+							<a href="" class="btn btn-link" ng-click="swap($index, $index - 1, false);" ng-if="!$first">Вверх</a>
+						</td>
+						<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+							<a href="" class="btn btn-link" ng-click="swap($index, $index + 1, false);" ng-if="!$last">Вниз</a>
+						</td>
+						<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+							<a href="" class="btn btn-link" ng-click="removeArrival($index, false);">Удалить</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div ng-if="scheduleInfo.arrivals.weekday.length == 0" class="alert alert-warning" role="alert">
+			Данный транспорт не ходит по будним дням.
+		</div>
+
+		<h3>Время отправления в выходной день</h3>
+		<div style="padding: 0 0 5px; text-align: center;">
+			<a href="" class="btn btn-primary" ng-click="addArrival(true);">Добавить время отправления</a>
+		</div>
+		<div class="info-wrapper" ng-if="scheduleInfo.arrivals.weekend.length > 0">
+			<table class="table table-striped">
+				<thead>
+					<tr>
+						<th>Начало интервала</th>
+						<th>Окончание интервала</th>
+						<th>Периодичность</th>
+						<th></th>
+						<th></th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="arrival in scheduleInfo.arrivals.weekend">
+						<td class="col-lg-3 col-md-3 col-sx-3 col-sm-3">
+							<div class="form-element" style="width: 175px; margin: 0 auto;">
+								<input required type="text" maxlength="5" placeholder="hh:mm" class="form-control" ng-model="arrival.time_from" pattern="([0 1]\d|2\d):[0-5]\d">
+								<i class="glyphicon glyphicon-time"></i>
+							</div>
+						</td>
+						<td class="col-lg-3 col-md-3 col-sx-3 col-sm-3">
+							<div class="form-element" style="width: 175px; margin: 0 auto;">
+								<input required type="text" maxlength="5" placeholder="hh:mm" class="form-control" ng-model="arrival.time_to" pattern="([0 1]\d|2\d):[0-5]\d">
+								<i class="glyphicon glyphicon-time"></i>
+							</div>
+						</td>
+						<td class="col-lg-3 col-md-3 col-sx-3 col-sm-3">
+							<div class="form-element" style="width: 175px; margin: 0 auto;">
+								<input required type="number" placeholder="Введите интервал" class="form-control" ng-model="arrival.interval" min="1" max="999">
+								<i class="glyphicon glyphicon-time"></i>
+							</div>
+						</td>
+						<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+							<a href="" class="btn btn-link" ng-click="swap($index, $index - 1, true);" ng-if="!$first">Вверх</a>
+						</td>
+						<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+							<a href="" class="btn btn-link" ng-click="swap($index, $index + 1, true);" ng-if="!$last">Вниз</a>
+						</td>
+						<td class="col-lg-1 col-md-1 col-sx-1 col-sm-1">
+							<a href="" class="btn btn-link" ng-click="removeArrival($index, true);">Удалить</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div ng-if="scheduleInfo.arrivals.weekend.length == 0" class="alert alert-warning" role="alert">
+			Данный транспорт не ходит по выходным дням.
+		</div>
+
+		<h3>Время до следующей станции</h3>
+		<div class="info-wrapper">
+			<table width="100%" class="table">
+				<thead>
+					<tr>
+						<th>Отстановка</th>
+						<th>Время до следующей станции</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="station in scheduleInfo.stations" class="edit-way-list">
+						<td class="col-lg-8 col-md-8 col-sx-8 col-sm-8">
+							<div class="station-edit-list" value="{{station.station_id}}" >
+								{{station.station_name}}
+								<i class="next-station glyphicon glyphicon-arrow-down" ng-if="!$last"></i>
+							</div>
+						</td>
+						<td class="col-lg-4 col-md-4 col-sx-4 col-sm-4">
+							<div class="form-element" style="width: 175px; margin: 0 auto;" ng-if="!$last">
+								<input required type="number" placeholder="Введите время" class="form-control" ng-model="station.duration_to_next" min="1" max="999">
+								<i class="glyphicon glyphicon-time"></i>
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="container-fluid" style="padding: 5px 0;">
+			<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: right; padding: 5px;">
+				<button type="submit" class="btn btn-primary">Сохранить</button>
+			</div>
+			<div class="col-lg-6 col-md-6 col-sx-6 col-sm-6" style="text-align: left; padding: 5px;">
+				<a href="" class="btn btn-default" ng-click="getSchedule();">Сбросить</a>
+			</div>
+		</div>
+
+	</form>
+
+</div>
+
+<div class="preview" ng-if="showPreview" style="padding: 50px">
+	<form class="container navbar-default" style="padding: 10px;" ng-submit="actualSave();">
+		<div style="text-align: center;">
+			<button type="submit" class="btn btn-primary">Сохранить</button>
+			<a href="" class="btn btn-default" ng-click="$parent.showPreview = false;">Закрыть</a>
+		</div>
+		<div class="container-fluid way-info-container">
+			<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">Расписание транспорта: <br />
+				{{scheduleInfo.way.transport_type}} №{{scheduleInfo.way.transport_number}}
+			</h3>
+			<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">От станции:<br />{{scheduleInfo.way.station_from_name}}</h3>
+			<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">До станции:<br />
+				{{scheduleInfo.way.station_to_name}}
+			</h3>
+		</div>
+		<table width="100%" class="table table-striped">
+			<thead>
+				<tr>
+					<th>Станция</th>
+					<th>Время в будние дни</th>
+					<th>Время в выходные дни</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="station in stations">
+					<td class="col-lg-2 col-md-2 col-sx-2 col-sm-2">{{station.station.station_name}}</td>
+					<td class="col-lg-5 col-md-5 col-sx-5 col-sm-5">{{station.weekday}}</td>
+					<td class="col-lg-5 col-md-5 col-sx-5 col-sm-5">{{station.weekend}}</td>
+				</tr>
+			</tbody>
+		</table>
+		<div style="text-align: center;">
+			<button type="submit" class="btn btn-primary">Сохранить</button>
+			<a href="" class="btn btn-default" ng-click="$parent.showPreview = false;">Закрыть</a>
+		</div>
+	</form>
+</div>
+

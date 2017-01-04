@@ -1,0 +1,46 @@
+<h3>Расписание</h3>
+
+<div class="container">
+
+	<div class="container-fluid way-info-container info-wrapper">
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">Маршрут транспорта: <br />
+			<a href="#/admin/transport/view/{{scheduleInfo.way.transport_id}}">{{scheduleInfo.way.transport_type}} №{{scheduleInfo.way.transport_number}}</a>
+		</h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">От станции:<br /><a href="#/admin/station/view/{{scheduleInfo.way.station_from_id}}">{{scheduleInfo.way.station_from_name}}</a></h3>
+		<h3 class="col-lg-4 col-md-4 col-sx-12 col-sm-12">До станции:<br />
+			<a href="#/admin/station/view/{{scheduleInfo.way.station_to_id}}">{{scheduleInfo.way.station_to_name}}</a>
+		</h3>
+	</div>
+	
+	<div ng-repeat="schedule in scheduleInfo.schedules" class="info-wrapper" style="margin: 5px 0;">
+		<h4 onclick="$(this).next('div').toggle('slow');" style="cursor: pointer;">{{schedule.station_name}}</h4>
+		<div class="list-group" style="margin-bottom: 0;">
+			<div class="list-group-item active">
+				Будние дни
+			</div>
+			<div ng-repeat="weekday in schedule.weekday" class="list-group-item">
+				{{weekday}}
+			</div>
+			<div ng-if="schedule.weekday.length == 0" class="list-group-item">
+				<div class="alert alert-warning">
+					 Отсутствет расписание.
+				</div>
+			</div>
+			<div class="list-group-item active">
+				Выходные дни
+			</div>
+			<div ng-repeat="weekend in schedule.weekend" class="list-group-item">
+				{{weekend}}
+			</div>
+			<div ng-if="schedule.weekend.length == 0" class="list-group-item">
+				<div class="alert alert-warning">
+					 Отсутствет расписание.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div ng-if="scheduleInfo.schedules.length == 0" class="alert alert-warning">
+		На данный маршрут отсутствет расписание.
+	</div>
+</div>

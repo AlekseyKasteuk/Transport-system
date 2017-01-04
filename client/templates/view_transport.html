@@ -1,0 +1,31 @@
+<div class="container-fluid">
+	<h1>{{transportInfo.transport.type}} №{{transportInfo.transport.number}}</h1>
+</div>
+<div class="container-fluid info">
+	<div class="col-lg-3 col-md-3 col-sm-6 col-xs-6">Путь: </div>
+	<div class="col-lg-3 col-md-3 col-sm-6 col-xs-6"><a href="#/admin/way/view/{{transportInfo.ways.way_1_id}}">{{transportInfo.ways.way_1_from_to}}</a></div>
+	<div class="col-lg-3 col-md-3 col-sm-6 col-xs-6">Путь: </div>
+	<div class="col-lg-3 col-md-3 col-sm-6 col-xs-6"><a href="#/admin/way/view/{{transportInfo.ways.way_2_id}}">{{transportInfo.ways.way_2_from_to}}</a></div>
+</div>
+<div class="container-fluid">
+	<h3>Остановки</h3>
+	<div class="list-container">
+		<table ng-if="transportInfo.stations.length > 0">
+			<thead>
+				<tr>
+					<th>Название</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="station in transportInfo.stations">
+					<td class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+						<a href="#/admin/station/view/{{station.id}}">{{station.name}}</a>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<div ng-if="transportInfo.stations.length == 0" class="alert alert-warning" role="alert">
+			 Выбранный транспорт не останавливается ни на одной остановке.
+		</div>
+	</div>
+</div>

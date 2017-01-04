@@ -1,0 +1,16 @@
+<div class="login-page" style="margin-top: 50px;">
+	<form ng-submit="submitLogin();" class="login-form info-wrapper">
+		<h3>Аворизация</h3>
+		<div class="form-element">
+			<input type="text" name="username" placeholder="Логин" class="form-control" ng-model="user.username">
+			<i class="glyphicon glyphicon-user"></i>
+		</div>
+		<div class="form-element">
+			<input type="password" name="password" placeholder="Пароль" class="form-control" ng-model="user.password">
+			<i class="glyphicon glyphicon-lock"></i>
+		</div>
+		<div class="modal-footer">
+			<input type="submit" class="btn btn-primary" value="Вход">
+		</div>
+	</form>
+</div>
